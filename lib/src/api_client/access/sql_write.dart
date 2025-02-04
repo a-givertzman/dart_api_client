@@ -5,11 +5,7 @@ import 'package:hmi_core/hmi_core_result.dart';
 
 class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
   late final Log _log;
-  // final ApiAddress _address;
-  // final String _authToken;
   final String _database;
-  final bool _keepAlive;
-  // final bool _debug;
   final SqlBuilder<T>? _insertSqlBuilder;
   final SqlBuilder<T>? _updateSqlBuilder;
   final SqlBuilder<T>? _deleteSqlBuilder;
@@ -17,12 +13,17 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
   final T Function() _emptyEntryBuilder;
   final ApiRequest _request;
   ///
-  ///
+  /// Performs a request to the API server
+  /// - Can be fetched only once, closes automatically
+  /// - `authToken` - authentication parameter, dipends on authentication kind
+  /// - `address` - IP and port of the API server
+  /// - `database` - database name
+  /// - `timeout` - time to wait read, write & connection until timeout error, default - 3 sec
   SqlWrite({
     required ApiAddress address,
     required String authToken,
     required String database,
-    bool keepAlive = false,
+    Duration timeout = const Duration(milliseconds: 3000),
     bool debug = false,
     SqlBuilder<T>? insertSqlBuilder,
     SqlBuilder<T>? updateSqlBuilder,
@@ -30,11 +31,7 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
     // required T Function(Map<String, dynamic> row) entryFromFactories,
     required T Function() emptyEntryBuilder,
   }) :
-    // _address = address,
-    // _authToken = authToken,
     _database = database,
-    _keepAlive = keepAlive,
-    // _debug = debug,
     _insertSqlBuilder = insertSqlBuilder,
     _updateSqlBuilder = updateSqlBuilder,
     _deleteSqlBuilder = deleteSqlBuilder,
@@ -43,11 +40,48 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
     _request = ApiRequest(
       address: address, 
       authToken: authToken, 
+      timeout: timeout,
       debug: debug,
       query: SqlQuery(
         database: database,
         sql: '',
-        keepAlive: keepAlive,
+      ),
+    ) {
+    _log = Log("$runtimeType");
+  }
+  ///
+  /// Performs a requests to the API server
+  /// - Can be fetched multiple times, call `close()` at the end
+  /// - `authToken` - authentication parameter, dipends on authentication kind
+  /// - `address` - IP and port of the API server
+  /// - `database` - database name
+  /// - `timeout` - time to wait read, write & connection until timeout error, default - 3 sec
+  SqlWrite.keep({
+    required ApiAddress address,
+    required String authToken,
+    required String database,
+    Duration timeout = const Duration(milliseconds: 3000),
+    bool debug = false,
+    SqlBuilder<T>? insertSqlBuilder,
+    SqlBuilder<T>? updateSqlBuilder,
+    SqlBuilder<T>? deleteSqlBuilder,
+    // required T Function(Map<String, dynamic> row) entryFromFactories,
+    required T Function() emptyEntryBuilder,
+  }) :
+    _database = database,
+    _insertSqlBuilder = insertSqlBuilder,
+    _updateSqlBuilder = updateSqlBuilder,
+    _deleteSqlBuilder = deleteSqlBuilder,
+    // _entryFromFactories = entryFromFactories,
+    _emptyEntryBuilder = emptyEntryBuilder,
+    _request = ApiRequest.keep(
+      address: address, 
+      authToken: authToken, 
+      timeout: timeout,
+      debug: debug,
+      query: SqlQuery(
+        database: database,
+        sql: '',
       ),
     ) {
     _log = Log("$runtimeType");
@@ -55,7 +89,7 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
   //
   //
   @override
-  Future<Result<T, Failure>> insert(T? entry, {bool? keepAlive}) {
+  Future<Result<T, Failure>> insert(T? entry) {
     T entry_;
     if (entry != null) {
       entry_ = entry;
@@ -66,7 +100,7 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
     if (builder != null) {
       final initialSql = Sql(sql: '');
       final sql = builder(initialSql, entry_);
-      return _fetch(sql, keepAlive ?? _keepAlive).then((result) {
+      return _fetch(sql).then((result) {
         return switch(result) {
           Ok() => () {
             return Ok<T, Failure>(entry_);
@@ -87,12 +121,12 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
   //
   //
   @override
-  Future<Result<void, Failure>> update(T entry, {bool? keepAlive}) {
+  Future<Result<void, Failure>> update(T entry, {bool? keep}) {
     final builder = _updateSqlBuilder;
     if (builder != null) {
       final initialSql = Sql(sql: '');
       final sql = builder(initialSql, entry);
-      return _fetch(sql, keepAlive ?? _keepAlive).then((result) {
+      return _fetch(sql).then((result) {
         return switch(result) {
           Ok() => () {
             return const Ok<void, Failure>(null);
@@ -113,12 +147,12 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
   //
   //
   @override
-  Future<Result<void, Failure>> delete(T entry, {bool? keepAlive}) {
+  Future<Result<void, Failure>> delete(T entry) {
     final builder = _deleteSqlBuilder;
     if (builder != null) {
       final initialSql = Sql(sql: '');
       final sql = builder(initialSql, entry);
-      return _fetch(sql, keepAlive ?? _keepAlive).then((result) {
+      return _fetch(sql).then((result) {
         return switch(result) {
           Ok() => () {
             return const Ok<void, Failure>(null);
@@ -138,11 +172,10 @@ class SqlWrite<T extends SchemaEntryAbstract> implements SchemaWrite<T> {
   }
   ///
   /// Fetchs data with [sql]
-  Future<Result<void, Failure>> _fetch(Sql sql, bool keepAlive) {
+  Future<Result<void, Failure>> _fetch(Sql sql) {
     final query = SqlQuery(
       database: _database,
       sql: sql.build(),
-      keepAlive: keepAlive,
     );
     _log.debug("._fetch | query: $query");
     return _request.fetchWith(query)

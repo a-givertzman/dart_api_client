@@ -7,7 +7,6 @@ import 'package:uuid/uuid.dart';
 class PythonQuery implements ApiQueryType {
   late String _id;
   final String _script;
-  final bool _keepAlive;
   final Map<String, dynamic> _params;
   ///
   /// Prapares query for some python script
@@ -17,8 +16,7 @@ class PythonQuery implements ApiQueryType {
     bool keepAlive = false,
   }) :
     _script = script,
-    _params = params,
-    _keepAlive = keepAlive;
+    _params = params;
   //
   //
   @override
@@ -29,12 +27,12 @@ class PythonQuery implements ApiQueryType {
   //
   //
   @override
-  String buildJson({String authToken = '', bool debug = false}) {
+  String buildJson({String authToken = '', bool debug = false, keep = false}) {
     _id = const Uuid().v1();
     final jsonString = json.encode({
       'authToken': authToken,
       'id': _id,
-      'keepAlive': _keepAlive,
+      'keepAlive': keep,
       'debug': debug,
       'python': {
         'script': _script,
@@ -47,10 +45,6 @@ class PythonQuery implements ApiQueryType {
   //
   @override
   String get id => _id;
-  //
-  //
-  @override
-  bool get keepAlive => _keepAlive;
   ///
   /// Returns contained python script
   String get script => _script;

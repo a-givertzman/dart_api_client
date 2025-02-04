@@ -10,7 +10,7 @@ class SchemaEntry implements SchemaEntryAbstract {
   final _log = Log("$SchemaEntry");
   final _id = const Uuid().v1();  // v1 time-based id
   final Map<String, FieldValue> _map;
-  final bool _isEmpty;
+  bool _isEmpty;
   bool _isChanged =  false;
   bool _isSelected = false;
   ///
@@ -95,6 +95,9 @@ class SchemaEntry implements SchemaEntryAbstract {
     if (field != null) {
       final changed = field.update(value);
       _isChanged = _isChanged || changed;
+      if (_isChanged) {
+        _isEmpty = false;
+      }
     }
     _log.debug('.update | key: $key, \t field: $field, isChanged: $_isChanged');
   }
@@ -114,6 +117,6 @@ class SchemaEntry implements SchemaEntryAbstract {
   //
   @override
   String toString() {
-    return '$runtimeType{ isChanged: $_isChanged, isSelected: $_isSelected, map: $_map}';
+    return '$runtimeType{ isEmpty: $_isEmpty, isChanged: $_isChanged, isSelected: $_isSelected, map: $_map}';
   }
 }

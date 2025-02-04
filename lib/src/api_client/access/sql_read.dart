@@ -2,44 +2,74 @@ import 'package:ext_rw/ext_rw.dart';
 import 'package:hmi_core/hmi_core_failure.dart';
 import 'package:hmi_core/hmi_core_log.dart';
 import 'package:hmi_core/hmi_core_result.dart';
-
+///
+/// Performs a request(s) to the API server
+/// - `SqlRead.keep` can be fetched multiple times, call `close()` at the end
 class SqlRead<T extends SchemaEntryAbstract, P> implements SchemaRead<T, P> {
   late final Log _log;
-  // final ApiAddress _address;
-  // final String _authToken;
   final String _database;
-  final bool _keepAlive;
-  // final bool _debug;
   final SqlBuilder<P?> _sqlBuilder;
   final T Function(Map<String, dynamic> row) _entryBuilder;
   Sql _sql = Sql(sql: '');
   final ApiRequest _request;
   ///
-  ///
+  /// Performs a request to the API server
+  /// - Can be fetched only once, closes automatically
+  /// - `authToken` - authentication parameter, dipends on authentication kind
+  /// - `address` - IP and port of the API server
+  /// - `database` - database name
+  /// - `timeout` - time to wait read, write & connection until timeout error, default - 3 sec
   SqlRead({
     required ApiAddress address,
     required String authToken,
     required String database,
-    bool keepAlive = false,
+    Duration timeout = const Duration(milliseconds: 3000),
     bool debug = false,
     required SqlBuilder<P?> sqlBuilder,
     required T Function(Map<String, dynamic> row) entryBuilder,
   }) :
-    // _address = address,
-    // _authToken = authToken,
     _database = database,
-    _keepAlive = keepAlive,
-    // _debug = debug,
     _sqlBuilder = sqlBuilder,
     _entryBuilder = entryBuilder,
     _request = ApiRequest(
       address: address, 
       authToken: authToken, 
+      timeout: timeout,
       debug: debug,
       query: SqlQuery(
         database: database,
         sql: '',
-        keepAlive: keepAlive,
+      ),
+    ) {
+    _log = Log("$runtimeType")..level = LogLevel.info;
+  }
+  ///
+  /// Performs a requests to the API server
+  /// - Can be fetched multiple times, call `close()` at the end
+  /// - `authToken` - authentication parameter, dipends on authentication kind
+  /// - `address` - IP and port of the API server
+  /// - `database` - database name
+  /// - `timeout` - time to wait read, write & connection until timeout error, default - 3 sec
+  SqlRead.keep({
+    required ApiAddress address,
+    required String authToken,
+    required String database,
+    Duration timeout = const Duration(milliseconds: 3000),
+    bool debug = false,
+    required SqlBuilder<P?> sqlBuilder,
+    required T Function(Map<String, dynamic> row) entryBuilder,
+  }) :
+    _database = database,
+    _sqlBuilder = sqlBuilder,
+    _entryBuilder = entryBuilder,
+    _request = ApiRequest.keep(
+      address: address, 
+      authToken: authToken, 
+      timeout: timeout,
+      debug: debug,
+      query: SqlQuery(
+        database: database,
+        sql: '',
       ),
     ) {
     _log = Log("$runtimeType")..level = LogLevel.info;
@@ -47,17 +77,16 @@ class SqlRead<T extends SchemaEntryAbstract, P> implements SchemaRead<T, P> {
   //
   //
   @override
-  Future<Result<List<T>, Failure>> fetch({P? params, bool? keepAlive}) {
+  Future<Result<List<T>, Failure>> fetch({P? params}) {
     _sql = _sqlBuilder(_sql, params);
-    return _fetch(_sql, keepAlive ?? _keepAlive);
+    return _fetch(_sql);
   }
   ///
   /// Fetchs data with [sql]
-  Future<Result<List<T>, Failure>> _fetch(Sql sql, bool keepAlive) {
+  Future<Result<List<T>, Failure>> _fetch(Sql sql) {
     final query = SqlQuery(
       database: _database,
       sql: sql.build(),
-      keepAlive: keepAlive,
     );
     _log.debug("._fetch | query: $query");
     return _request.fetchWith(query)

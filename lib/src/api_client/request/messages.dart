@@ -113,7 +113,7 @@ class Messages {
         (socket) {
           // _log.debug('._socket | connected');
           socket.setOption(SocketOption.tcpNoDelay, true);
-          final message = ArcMessage(Message(socket), keepAlive);
+          final message = ArcMessage(Message(socket), keepAlive, timeout: _timeout);
           _messages.add(message);
           // _log.warning('._socket | _messages $_messages');
           return Ok(message);

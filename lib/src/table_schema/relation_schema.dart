@@ -25,7 +25,7 @@ class RelationSchema<T extends SchemaEntryAbstract, P> implements TableSchemaAbs
   ///
   /// Returns a list of table field names
   @override
-  List<Field> get fields {
+  List<Field<T>> get fields {
     return _schema.fields;
   }
   ///
@@ -37,7 +37,7 @@ class RelationSchema<T extends SchemaEntryAbstract, P> implements TableSchemaAbs
   //
   //
   @override
-  List<T> get entries => _schema.entries;
+  Map<String, T> get entries => _schema.entries;
   ///
   /// Fetchs data with new sql built from [values]
   @override
@@ -49,7 +49,7 @@ class RelationSchema<T extends SchemaEntryAbstract, P> implements TableSchemaAbs
   Map<String, List<SchemaEntryAbstract>> get relations {
     return _relations.map((key, scheme) {
       final entries = scheme.entries;
-      return MapEntry(key, entries);
+      return MapEntry(key, entries.values.toList());
     });
   }
   //

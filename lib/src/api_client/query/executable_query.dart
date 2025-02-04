@@ -8,17 +8,14 @@ class ExecutableQuery implements ApiQueryType {
   late String _id;
   final String _script;
   final Map<String, dynamic> _params;
-  final bool _keepAlive;
   ///
   /// Prapares query for some executable
   ExecutableQuery({
     required String script,
     required Map<String, dynamic> params,
-    bool keepAlive = false,
   }) :
     _script = script,
-    _params = params,
-    _keepAlive = keepAlive;
+    _params = params;
   //
   @override
   bool valid() {
@@ -28,12 +25,12 @@ class ExecutableQuery implements ApiQueryType {
   //
   //
   @override
-  String buildJson({String authToken = '', bool debug = false}) {
+  String buildJson({String authToken = '', bool debug = false, keep = false}) {
     _id = const Uuid().v1();
     final jsonString = json.encode({
       'authToken': authToken,
       'id': _id,
-      'keepAlive': _keepAlive,
+      'keepAlive': keep,
       'debug': debug,
       'executable': {
         'name': _script,
@@ -46,10 +43,6 @@ class ExecutableQuery implements ApiQueryType {
   //
   @override
   String get id => _id;
-  //
-  //
-  @override
-  bool get keepAlive => _keepAlive;
   //
   //
   String get script => _script;

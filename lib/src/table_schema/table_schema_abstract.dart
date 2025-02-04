@@ -8,13 +8,13 @@ import 'package:hmi_core/hmi_core_result.dart';
 abstract interface class TableSchemaAbstract<T extends SchemaEntryAbstract, P> implements Schema<T, P> {
   ///
   /// Returns a list of table fields
-  List<Field> get fields;
+  List<Field<T>> get fields;
   ///
   /// Returns a list of table field keys
   List<String> get keys;
   ///
   /// Returns table row's data
-  List<T> get entries;
+  Map<String, T> get entries;
   ///
   /// Fetchs data with new sql built from [values]
   @override

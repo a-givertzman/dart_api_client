@@ -8,7 +8,7 @@ import 'package:hmi_core/hmi_core_result.dart';
 /// abstruction on the SQL table rows
 class TableSchema<T extends SchemaEntryAbstract, P> implements TableSchemaAbstract<T, P> {
   late final Log _log;
-  final List<Field> _fields;
+  final List<Field<T>> _fields;
   final Map<String, T> _entries = {};
   final SchemaRead<T, P> _read;
   final SchemaWrite<T> _write;
@@ -17,7 +17,7 @@ class TableSchema<T extends SchemaEntryAbstract, P> implements TableSchemaAbstra
   /// abstruction on the SQL table rows
   /// - [keys] - list of table field names
   TableSchema({
-    required List<Field> fields,
+    required List<Field<T>> fields,
     SchemaRead<T, P> read = const SchemaRead.empty(),
     SchemaWrite<T> write = const SchemaWrite.empty(),
   }) :
@@ -29,7 +29,7 @@ class TableSchema<T extends SchemaEntryAbstract, P> implements TableSchemaAbstra
   ///
   /// Returns a list of table field names
   @override
-  List<Field> get fields {
+  List<Field<T>> get fields {
     return _fields;
   }
   ///
@@ -41,7 +41,7 @@ class TableSchema<T extends SchemaEntryAbstract, P> implements TableSchemaAbstra
   //
   //
   @override
-  List<T> get entries => _entries.values.toList();
+  Map<String, T> get entries => _entries;
   ///
   /// Fetchs data with new sql built from [values]
   @override

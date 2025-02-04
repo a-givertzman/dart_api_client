@@ -4,11 +4,8 @@ abstract class ApiQueryType {
   bool valid();
   ///
   /// Returns built JSON string 
-  String buildJson({String authToken = '', bool debug = false});
+  String buildJson({String authToken = '', bool debug = false, keep = false});
   ///
   /// Returns id of query 
   String get id;
-  ///
-  /// Returns keepAlive of query 
-  bool get keepAlive;
 }
